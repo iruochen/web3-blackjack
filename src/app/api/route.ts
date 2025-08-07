@@ -1,3 +1,66 @@
+// define the utility functions for dynamodb
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb"
+import {
+	DynamoDBDocumentClient,
+	PutCommand,
+	GetCommand,
+} from "@aws-sdk/lib-dynamodb"
+
+// initialize the DynamoDB client
+const client = new DynamoDBClient({
+	region: "us-east-1",
+	credentials: {
+		accessKeyId: process.env.AWS_USER_ACCESS_KEY_ID || "",
+		secretAccessKey: process.env.AWS_USER_ACCESS_KEY || "",
+	},
+})
+const docClient = DynamoDBDocumentClient.from(client)
+const TABLE_NAME = "web3-blackjack-game"
+
+// write the score to the DynamoDB table
+async function writeScore(player: string, score: number) {
+	const params = {
+		TableName: TABLE_NAME,
+		Item: {
+			player: player,
+			score: score,
+		},
+	}
+	try {
+		await docClient.send(new PutCommand(params))
+		console.log("Score written to DynamoDB:", { player, score })
+	} catch (error) {
+		console.error("Error writing score to DynamoDB:", error)
+		// throw error
+	}
+}
+
+// read the score from the DynamoDB table
+async function readScore(player: string) {
+	const params = {
+		TableName: TABLE_NAME,
+		Key: {
+			player: player,
+		},
+	}
+	try {
+		const result = await docClient.send(new GetCommand(params))
+		if (result.Item) {
+			console.log("Score read from DynamoDB:", result.Item)
+			return result.Item.score as number
+		} else {
+			console.log("No score found for player:", player)
+			return null
+		}
+	} catch (error) {
+		console.error("Error reading score from DynamoDB:", error)
+		return null
+		// throw error
+	}
+}
+
+const DEFAULT_PLAYER = "player"
+
 // when the game is initialized, get player and dealer 2 random cards respectively
 export interface Card {
 	rank: string
@@ -34,7 +97,7 @@ function getRandomCard(deck: Card[], count: number) {
 	return [randomCards, remainingDeck]
 }
 
-export function GET() {
+export async function GET() {
 	// reset the game state
 	gameState.playerHand = []
 	gameState.dealerHand = []
@@ -47,6 +110,21 @@ export function GET() {
 	gameState.dealerHand = dealerCards
 	gameState.deck = newDeck
 	gameState.message = ""
+
+	try {
+		const data = await readScore(DEFAULT_PLAYER)
+		if (!data) {
+			gameState.score = 0
+		} else {
+			gameState.score = data
+		}
+	} catch (error) {
+		console.error("Error initializing game:", error)
+		return new Response(
+			JSON.stringify({ message: "error fetching data from dynamodb" }),
+			{ status: 500 },
+		)
+	}
 
 	return new Response(
 		JSON.stringify({
@@ -121,6 +199,16 @@ export async function POST(request: Request) {
 	} else {
 		return new Response(JSON.stringify("Invalid action"), { status: 400 })
 	}
+	try {
+		await writeScore(DEFAULT_PLAYER, gameState.score)
+	} catch (error) {
+		console.error("Error writing score to DynamoDB:", error)
+		return new Response(
+			JSON.stringify({ message: "error writing data to dynamodb" }),
+			{ status: 500 },
+		)
+	}
+
 	return new Response(
 		JSON.stringify({
 			playerCards: gameState.playerHand,
