@@ -6,6 +6,7 @@ import {
 	GetCommand,
 } from "@aws-sdk/lib-dynamodb"
 import { verifyMessage } from "viem"
+import jwt from "jsonwebtoken"
 
 // initialize the DynamoDB client
 const client = new DynamoDBClient({
@@ -62,8 +63,6 @@ async function readScore(player: string) {
 	}
 }
 
-const DEFAULT_PLAYER = "player"
-
 // when the game is initialized, get player and dealer 2 random cards respectively
 export interface Card {
 	rank: string
@@ -100,7 +99,12 @@ function getRandomCard(deck: Card[], count: number) {
 	return [randomCards, remainingDeck]
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+	const url = new URL(request.url)
+	const address = url.searchParams.get("address")
+	if (!address) {
+		return new Response(JSON.stringify("Address is required"), { status: 400 })
+	}
 	// reset the game state
 	gameState.playerHand = []
 	gameState.dealerHand = []
@@ -115,7 +119,7 @@ export async function GET() {
 	gameState.message = ""
 
 	try {
-		const data = await readScore(DEFAULT_PLAYER)
+		const data = await readScore(address)
 		if (!data) {
 			gameState.score = 0
 		} else {
@@ -144,15 +148,35 @@ export async function GET() {
 
 export async function POST(request: Request) {
 	const body = await request.json()
-	const { action } = body
+	const { action, address } = body
 	if (action === "auth") {
 		const { address, message, signature } = body
-		const isValid = await verifyMessage({address, message, signature})
+		const isValid = await verifyMessage({ address, message, signature })
 		if (!isValid) {
-			return new Response(JSON.stringify("Invalid signature"), { status: 400 })
+			return new Response(JSON.stringify({ message: "Invalid signature" }), {
+				status: 400,
+			})
 		} else {
-			return new Response(JSON.stringify("Signature verified"), { status: 200 })
+			const token = jwt.sign({ address }, process.env.JWT_SECRET || "", {
+				expiresIn: "1h",
+			})
+			return new Response(
+				JSON.stringify({ message: "Signature verified", jsonwebtoken: token }),
+				{ status: 200 },
+			)
 		}
+	}
+
+	// check if the request has a valid JWT token
+	const token = request.headers.get("bearer")?.split(" ")[1]
+	if (!token) {
+		return new Response(JSON.stringify("Unauthorized"), { status: 401 })
+	}
+	const decoded = jwt.verify(token, process.env.JWT_SECRET || "") as {
+		address: string
+	}
+	if (decoded.address.toLocaleLowerCase() !== address.toLocaleLowerCase()) {
+		return new Response(JSON.stringify("Unauthorized"), { status: 401 })
 	}
 
 	// when hit is clicked, get a random card from the deck and add it to the player's hand
@@ -213,7 +237,7 @@ export async function POST(request: Request) {
 		return new Response(JSON.stringify("Invalid action"), { status: 400 })
 	}
 	try {
-		await writeScore(DEFAULT_PLAYER, gameState.score)
+		await writeScore(address, gameState.score)
 	} catch (error) {
 		console.error("Error writing score to DynamoDB:", error)
 		return new Response(

@@ -17,7 +17,7 @@ export default function Page() {
 	const { signMessageAsync } = useSignMessage()
 
 	const initGame = async () => {
-		const response = await fetch("/api", { method: "GET" })
+		const response = await fetch(`/api?address=${address}`, { method: "GET" })
 		const data = await response.json()
 		setPlayerHand(data.playerCards)
 		setDealerHand(data.dealerCards)
@@ -28,7 +28,10 @@ export default function Page() {
 	async function handleHit() {
 		const response = await fetch("/api", {
 			method: "POST",
-			body: JSON.stringify({ action: "hit" }),
+			headers: {
+				bearer: `Bearer ${localStorage.getItem("jwt") || ""}`,
+			},
+			body: JSON.stringify({ action: "hit", address: address }),
 		})
 		const data = await response.json()
 		setPlayerHand(data.playerCards)
@@ -40,7 +43,10 @@ export default function Page() {
 	async function handleStand() {
 		const response = await fetch("/api", {
 			method: "POST",
-			body: JSON.stringify({ action: "stand" }),
+			headers: {
+				bearer: `Bearer ${localStorage.getItem("jwt") || ""}`,
+			},
+			body: JSON.stringify({ action: "stand", address: address }),
 		})
 		const data = await response.json()
 		setPlayerHand(data.playerCards)
@@ -50,7 +56,7 @@ export default function Page() {
 	}
 
 	async function handleReset() {
-		const response = await fetch("/api", { method: "GET" })
+		const response = await fetch(`/api?address=${address}`, { method: "GET" })
 		const data = await response.json()
 		setPlayerHand(data.playerCards)
 		setDealerHand(data.dealerCards)
@@ -66,6 +72,8 @@ export default function Page() {
 			body: JSON.stringify({ action: "auth", address, message, signature }),
 		})
 		if (response.status === 200) {
+			const { jsonwebtoken } = await response.json()
+			localStorage.setItem("jwt", jsonwebtoken)
 			setIsSigned(true)
 			initGame()
 		}
