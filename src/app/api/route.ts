@@ -5,6 +5,7 @@ import {
 	PutCommand,
 	GetCommand,
 } from "@aws-sdk/lib-dynamodb"
+import { verifyMessage } from "viem"
 
 // initialize the DynamoDB client
 const client = new DynamoDBClient({
@@ -31,6 +32,7 @@ async function writeScore(player: string, score: number) {
 		console.log("Score written to DynamoDB:", { player, score })
 	} catch (error) {
 		console.error("Error writing score to DynamoDB:", error)
+		// TODO Re-enable DynamoDB integration once AWS account is set up
 		// throw error
 	}
 }
@@ -55,6 +57,7 @@ async function readScore(player: string) {
 	} catch (error) {
 		console.error("Error reading score from DynamoDB:", error)
 		return null
+		// TODO Re-enable DynamoDB integration once AWS account is set up
 		// throw error
 	}
 }
@@ -140,7 +143,17 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-	const { action } = await request.json()
+	const body = await request.json()
+	const { action } = body
+	if (action === "auth") {
+		const { address, message, signature } = body
+		const isValid = await verifyMessage({address, message, signature})
+		if (!isValid) {
+			return new Response(JSON.stringify("Invalid signature"), { status: 400 })
+		} else {
+			return new Response(JSON.stringify("Signature verified"), { status: 200 })
+		}
+	}
 
 	// when hit is clicked, get a random card from the deck and add it to the player's hand
 	// calculate the points of the player's hand

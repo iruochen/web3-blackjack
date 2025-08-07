@@ -1,5 +1,7 @@
 "use client"
 import { useEffect, useState } from "react"
+import { ConnectButton } from "@rainbow-me/rainbowkit"
+import { useAccount, useSignMessage } from "wagmi"
 
 export default function Page() {
 	const [message, setMessage] = useState<string>("")
@@ -10,18 +12,18 @@ export default function Page() {
 		{ rank: string; suit: string }[]
 	>([])
 	const [score, setScore] = useState<number>(0)
+	const [isSigned, setIsSigned] = useState(false)
+	const { address } = useAccount()
+	const { signMessageAsync } = useSignMessage()
 
-	useEffect(() => {
-		const initGame = async () => {
-			const response = await fetch("/api", { method: "GET" })
-			const data = await response.json()
-			setPlayerHand(data.playerCards)
-			setDealerHand(data.dealerCards)
-			setMessage(data.message)
-			setScore(data.score)
-		}
-		initGame()
-	}, [])
+	const initGame = async () => {
+		const response = await fetch("/api", { method: "GET" })
+		const data = await response.json()
+		setPlayerHand(data.playerCards)
+		setDealerHand(data.dealerCards)
+		setMessage(data.message)
+		setScore(data.score)
+	}
 
 	async function handleHit() {
 		const response = await fetch("/api", {
@@ -56,8 +58,35 @@ export default function Page() {
 		setScore(data.score)
 	}
 
+	async function handleSign() {
+		const message = `Welcome to Web3 game Black Jack at ${new Date().toString()}`
+		const signature = await signMessageAsync({ message })
+		const response = await fetch("api", {
+			method: "POST",
+			body: JSON.stringify({ action: "auth", address, message, signature }),
+		})
+		if (response.status === 200) {
+			setIsSigned(true)
+			initGame()
+		}
+	}
+	if (!isSigned) {
+		return (
+			<div className="flex flex-col gap-2 items-center justify-center h-screen bg-gray-300">
+				<ConnectButton />
+				<button
+					onClick={handleSign}
+					className="border-black bg-amber-300 p-2 rounded-md"
+				>
+					Sign with your wallet
+				</button>
+			</div>
+		)
+	}
+
 	return (
 		<div className="flex flex-col gap-2 items-center justify-center h-screen bg-gray-300">
+			<ConnectButton />
 			<h1 className="text-3xl bold">Welcome to Web3 game Black Jack</h1>
 			<h2 className="text-2xl bold">Score: {score}</h2>
 			<h2
