@@ -17,7 +17,7 @@ const client = new DynamoDBClient({
 	},
 })
 const docClient = DynamoDBDocumentClient.from(client)
-const TABLE_NAME = "web3-blackjack-game"
+const TABLE_NAME = "blackJack"
 
 // write the score to the DynamoDB table
 async function writeScore(player: string, score: number) {
@@ -33,8 +33,7 @@ async function writeScore(player: string, score: number) {
 		console.log("Score written to DynamoDB:", { player, score })
 	} catch (error) {
 		console.error("Error writing score to DynamoDB:", error)
-		// TODO Re-enable DynamoDB integration once AWS account is set up
-		// throw error
+		throw error
 	}
 }
 
@@ -57,9 +56,7 @@ async function readScore(player: string) {
 		}
 	} catch (error) {
 		console.error("Error reading score from DynamoDB:", error)
-		return null
-		// TODO Re-enable DynamoDB integration once AWS account is set up
-		// throw error
+		throw error
 	}
 }
 
@@ -219,7 +216,7 @@ export async function POST(request: Request) {
 			gameState.message = "Dealer Bust! Player wins!"
 			gameState.score += 100
 		} else if (dealerHandValue === 21) {
-			gameState.message = "Dealer Black Jack! Player wins!"
+			gameState.message = "Dealer Black Jack! Player lose!"
 			gameState.score -= 100
 		} else {
 			const playerHandValue = calculateHandValue(gameState.playerHand)
