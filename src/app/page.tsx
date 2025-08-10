@@ -1,7 +1,9 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
 import { useAccount, useSignMessage } from "wagmi"
+import { parseAbi, createPublicClient, createWalletClient, custom } from "viem"
+import { sepolia } from "viem/chains"
 
 export default function Page() {
 	const [message, setMessage] = useState<string>("")
@@ -15,6 +17,8 @@ export default function Page() {
 	const [isSigned, setIsSigned] = useState(false)
 	const { address } = useAccount()
 	const { signMessageAsync } = useSignMessage()
+	const [publicClient, setPublicClient] = useState<any>(null)
+	const [walletClient, setWalletClient] = useState<any>(null)
 
 	const initGame = async () => {
 		const response = await fetch(`/api?address=${address}`, { method: "GET" })
@@ -23,6 +27,46 @@ export default function Page() {
 		setDealerHand(data.dealerCards)
 		setMessage(data.message)
 		setScore(data.score)
+		if (typeof window !== "undefined" && window.ethereum) {
+			const publicClientInstance = createPublicClient({
+				chain: sepolia,
+				transport: custom(window.ethereum),
+			})
+			const walletClientInstance = createWalletClient({
+				chain: sepolia,
+				transport: custom(window.ethereum),
+			})
+			setPublicClient(publicClientInstance)
+			setWalletClient(walletClientInstance)
+		} else {
+			console.error(
+				"Ethereum provider not found. Please install MetaMask or another wallet.",
+			)
+		}
+	}
+
+	async function handleSendTx() {
+		// get address contract
+		const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS
+		// get abi
+		const contractAbi = parseAbi([process.env.NEXT_PUBLIC_CONTRACT_ABI || ""])
+		// publicClient -> simulate -> sendTransaction
+		await publicClient.simulateContract({
+			address: contractAddress,
+			abi: contractAbi,
+			functionName: "sendRequest",
+			args: [[address], address],
+			account: address,
+		})
+		// walletClient -> sendTransaction
+		const txHash = await walletClient.writeContract({
+			to: contractAddress,
+			abi: contractAbi,
+			functionName: "sendRequest",
+			args: [[address], address],
+			account: address,
+		})
+		console.log("Transaction sent with hash:", txHash)
 	}
 
 	async function handleHit() {
@@ -102,6 +146,12 @@ export default function Page() {
 			>
 				{message}
 			</h2>
+			<button
+				onClick={handleSendTx}
+				className="border-black bg-amber-300 p-2 rounded-md"
+			>
+				Get NFT
+			</button>
 			<div className="mt-4">
 				<h2>Dealer's hand</h2>
 				<div className="flex flex-row gap-2">
