@@ -165,14 +165,23 @@ export async function POST(request: Request) {
 	}
 
 	// check if the request has a valid JWT token
-	const token = request.headers.get("bearer")?.split(" ")[1]
+	const authHeader = request.headers.get("Authorization")
+	const token = authHeader?.split(" ")[1]
 	if (!token) {
 		return new Response(JSON.stringify("Unauthorized"), { status: 401 })
 	}
-	const decoded = jwt.verify(token, process.env.JWT_SECRET || "") as {
-		address: string
+	let decoded
+	try {
+		decoded = jwt.verify(token, process.env.JWT_SECRET || "") as {
+			address: string
+		}
+	} catch {
+		return new Response(JSON.stringify("Unauthorized or token expired"), {
+			status: 401,
+		})
 	}
-	if (decoded.address.toLocaleLowerCase() !== address.toLocaleLowerCase()) {
+
+	if (decoded.address.toLowerCase() !== address.toLowerCase()) {
 		return new Response(JSON.stringify("Unauthorized"), { status: 401 })
 	}
 
