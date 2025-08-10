@@ -182,7 +182,7 @@ export default function Page() {
 		try {
 			const decoded = jwtDecode<JwtPayload>(jwt)
 			const now = Date.now() / 1000
-			if (decoded.exp < now) {
+			if (typeof decoded.exp === "undefined" || decoded.exp < now) {
 				localStorage.removeItem("jwt")
 				setHasJwt(false)
 				setIsSigned(false)
@@ -220,34 +220,36 @@ export default function Page() {
 
 	if (!isSigned) {
 		return (
-			<div className="min-h-[100vh] bg-gradient-to-br from-indigo-900 via-purple-900 to-black text-yellow-400/90 flex flex-col">
-				<header className="w-full border-b border-yellow-500 bg-black/90 backdrop-blur-md">
+			<div className="min-h-screen bg-gradient-to-br from-[#0a0f1f] via-[#1b0036] to-black text-[#FFD700] flex flex-col">
+				{/* Header */}
+				<header className="w-full border-b border-yellow-500/40 bg-black/70 backdrop-blur-sm shadow-lg">
 					<div className="max-w-7xl mx-auto px-8 py-4 flex items-center justify-between">
-						<h1 className="text-3xl font-extrabold tracking-wide drop-shadow-lg text-left flex-1">
-							Web3 BlackJack
+						<h1 className="text-3xl font-extrabold tracking-widest drop-shadow-[0_0_6px_#FFD700]">
+							♠ Web3 BlackJack
 						</h1>
-						<div>
-							<ConnectButton />
-						</div>
+						<ConnectButton />
 					</div>
 				</header>
 
+				{/* Main */}
 				<main className="flex-grow max-w-7xl mx-auto px-8 flex flex-col justify-center items-center">
-					<section className="max-w-xl w-full bg-black/80 backdrop-blur-md rounded-3xl p-10 shadow-xl border border-yellow-500">
-						<h2 className="text-4xl font-bold mb-6 text-center tracking-wide drop-shadow-lg">
-							Welcome to BlackJack
+					<section className="max-w-xl w-full bg-black/60 backdrop-blur-lg rounded-3xl p-10 shadow-[0_0_25px_rgba(255,215,0,0.2)] border border-yellow-500/40">
+						<h2 className="text-4xl font-bold mb-6 text-center tracking-wider drop-shadow-[0_0_8px_#FFD700]">
+							Welcome to the BlackJack
 						</h2>
-						<p className="text-center text-yellow-300 mb-10 leading-relaxed">
-							Connect your wallet and sign in to start playing. Good luck!
+						<p className="text-center text-yellow-200 mb-10 leading-relaxed">
+							Connect your wallet and sign in to start your journey. Place your
+							bets, trust the chain, and may the odds be in your favor.
 						</p>
 
+						{/* Buttons */}
 						<div className="flex justify-center gap-5">
 							<ConnectButton />
 							{!hasJwt && (
 								<button
 									onClick={handleSign}
 									disabled={isLoading || !isConnected}
-									className="px-8 py-3 rounded-full font-semibold bg-gradient-to-r from-yellow-600 to-yellow-400 hover:from-yellow-700 hover:to-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition text-black"
+									className="px-8 py-3 rounded-full font-semibold bg-gradient-to-r from-yellow-500 to-yellow-300 hover:from-yellow-400 hover:to-yellow-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_#FFD700] hover:shadow-[0_0_25px_#FFD700] transition text-black"
 								>
 									{isLoading ? (
 										<span className="flex items-center gap-2 justify-center">
@@ -261,6 +263,7 @@ export default function Page() {
 							)}
 						</div>
 
+						{/* Warning */}
 						{hasJwt && !isConnected && (
 							<p className="mt-6 text-center text-sm text-red-400">
 								JWT detected, please connect your wallet to continue.
@@ -273,11 +276,12 @@ export default function Page() {
 	}
 
 	return (
-		<div className="h-screen overflow-hidden bg-black text-yellow-400 flex flex-col">
-			<header className="w-full border-b border-yellow-400 bg-black/90 backdrop-blur-md flex-shrink-0">
+		<div className="min-h-screen bg-gradient-to-br from-[#0a0f1f] via-[#1b0036] to-black text-[#FFD700] flex flex-col">
+			{/* Header */}
+			<header className="w-full border-b border-yellow-500/40 bg-black/70 backdrop-blur-sm shadow-lg">
 				<div className="max-w-7xl mx-auto px-8 py-4 flex items-center justify-between">
-					<h1 className="text-3xl font-extrabold tracking-wide drop-shadow-lg text-left flex-1 text-yellow-400">
-						Web3 BlackJack
+					<h1 className="text-3xl font-extrabold tracking-widest drop-shadow-[0_0_6px_#FFD700]">
+						♠ Web3 BlackJack
 					</h1>
 					<ConnectButton />
 				</div>
