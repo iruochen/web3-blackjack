@@ -245,6 +245,8 @@ export default function Page() {
 						{/* Buttons */}
 						<div className="flex justify-center gap-5">
 							<ConnectButton />
+						</div>
+						<div className="flex justify-center mt-6">
 							{!hasJwt && (
 								<button
 									onClick={handleSign}

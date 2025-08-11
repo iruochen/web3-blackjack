@@ -56,6 +56,8 @@ NEXT_PUBLIC_CONTRACT_ABI=
 ## License
 MIT License
 
+## Acknowledgements
+- [QingyangKong/blackjack-web3](https://github.com/QingyangKong/blackjack-web3)
 ---
 
 # Web3 二十一点游戏
