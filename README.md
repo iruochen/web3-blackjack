@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="public/screenshots/banner.png" alt="BlackJack Web3 Game Banner" width="100%">
+</p>
+
 # BlackJack Web3 Game / Web3 二十一点游戏
 
 [English](#english) | [中文](#中文)
