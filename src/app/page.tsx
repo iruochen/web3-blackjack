@@ -80,6 +80,21 @@ export default function Page() {
 				account: address,
 			})
 			console.log("Transaction sent with hash:", txHash)
+			const receipt = await publicClient.waitForTransactionReceipt({
+				hash: txHash,
+			})
+			if (receipt.status === "success") {
+				setMessage("Transaction successful! You have claimed your NFT.")
+				const response = await fetch("/api", {
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${localStorage.getItem("jwt") || ""}`,
+					},
+					body: JSON.stringify({ action: "deduct", address }),
+				})
+				const data = await response.json()
+				setScore(data.score || 0)
+			}
 		} catch (error) {
 			console.error("Error sending transaction:", error)
 			setMessage("Failed to send transaction.")

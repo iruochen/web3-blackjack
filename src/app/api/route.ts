@@ -19,6 +19,31 @@ const client = new DynamoDBClient({
 const docClient = DynamoDBDocumentClient.from(client)
 const TABLE_NAME = "blackJack"
 
+async function deductScore(player: string, score: number) {
+	const currentScore = await readScore(player)
+	if (currentScore === null) {
+		throw new Error("No score found for player")
+	}
+	const newScore = currentScore - score
+	if (newScore < 0) {
+		throw new Error("Score cannot be negative")
+	}
+	const params = {
+		TableName: TABLE_NAME,
+		Item: {
+			player: player,
+			score: newScore,
+		},
+	}
+	try {
+		await docClient.send(new PutCommand(params))
+		console.log("Score deducted in DynamoDB:", { player, score: newScore })
+	} catch (error) {
+		console.error("Error deducting score in DynamoDB:", error)
+		throw error
+	}
+}
+
 // write the score to the DynamoDB table
 async function writeScore(player: string, score: number) {
 	const params = {
@@ -239,6 +264,15 @@ export async function POST(request: Request) {
 				gameState.message = "Draw!"
 			}
 		}
+	} else if (action === "deduct") {
+		await deductScore(address, 1000)
+		return new Response(
+			JSON.stringify({
+				message: "Score deducted successfully",
+				score: body.score,
+			}),
+			{ status: 200 },
+		)
 	} else {
 		return new Response(JSON.stringify("Invalid action"), { status: 400 })
 	}
